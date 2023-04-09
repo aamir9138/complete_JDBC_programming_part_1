@@ -522,7 +522,7 @@ To send the `sql query` to the database and to bring the `result` from database 
 Statement st = con.createStatement();
 ```
 
-## 4. prepare, send and execute SQL Query
+## 4. prepare, send and execute SQL Query part - 1
 
 from java developer point of view we should know about `SELECT, INSERT, DELETE, UPDATE` commands mostly.
 
@@ -564,3 +564,337 @@ delete from movies where mno=2;
 ```
 select * from movies
 ```
+
+## install SQL and use on commandline
+
+watch this video
+
+```
+https://www.youtube.com/watch?v=0nLBpXeWQ9E&t=139s
+```
+
+then to do the basic operation in SQL using command line are as follows
+
+```
+SQL> drop table movies;
+
+Table dropped.
+
+SQL> create table movies(mno number,mname varchar2(10),hero varchar2(10), heroine varchar2(10));
+
+Table created.
+
+SQL> insert into movies values(1, 'Bahubali', 'prabhas', 'Anushka');
+
+1 row created.
+
+SQL> insert into movies values(2, 'Raees', 'shahrukh', 'Sunny');
+
+1 row created.
+
+SQL> insert into movies values(3, 'idiots', 'aamir khan', 'kareena');
+
+1 row created.
+
+SQL> select * from movies;
+
+       MNO MNAME      HERO       HEROINE
+---------- ---------- ---------- ----------
+         1 Bahubali   prabhas    Anushka
+         2 Raees      shahrukh   Sunny
+         3 idiots     aamir khan kareena
+
+SQL> update movies set heroine='Tamana' where mname='Bahubali';
+
+1 row updated.
+
+SQL> select * from movies;
+
+       MNO MNAME      HERO       HEROINE
+---------- ---------- ---------- ----------
+         1 Bahubali   prabhas    Tamana
+         2 Raees      shahrukh   Sunny
+         3 idiots     aamir khan kareena
+
+SQL> delete from movies where mno=3;
+
+1 row deleted.
+
+SQL> select * from movies;
+
+       MNO MNAME      HERO       HEROINE
+---------- ---------- ---------- ----------
+         1 Bahubali   prabhas    Tamana
+         2 Raees      shahrukh   Sunny
+
+SQL>
+```
+
+## 4. prepare, send and execute SQL Query part - 2
+
+As a Java developer point of view we have 2 types of queries
+
+- Select Queries
+- Non-Select Queries
+
+### 1. Select Queries
+
+for example
+
+```
+select * from movies;
+```
+
+it will return us `Data` which are a group of records. This group of records is called `Result set` in JDBC.
+
+### 2. non-select Queries(DML commands)
+
+DML means Data Manipulation commands i.e. `insert|delete|update`.
+
+```
+insert into movies values(4, 'spider', 'mahesh', 'Rakes')
+```
+
+we get `1 row created`.
+
+```
+delete from movies where mno=4;
+```
+
+we get `1 row deleted`.
+
+### Executing sql queries in jdbc
+
+first we have to revise this that `Statement Object` is used to send the `sql queries` to the database and bring back the results.
+
+`Statement st = con.createStatement();`
+
+to execute sql queries 3 methods are available.
+
+1. `executeQuery()`
+2. `executeUpdate()`
+3. `execute()`
+
+## 1. executeQuery()
+
+`executeQuery()` method is used to to execute the `select queries` for example `select * from movies`. which will return group of records i.e `ResultSet`. so the prototype for this method will look like.
+
+`public ResultSet executeQuery(String sqlQuery) throws SQLException`
+
+for example: `ResultSet rs = st.executeQuery("select * from movies");`
+
+## 2. executeUpdate()
+
+it is applicable for `non-select operations` i.e DML (insert, delete, update). if we execute non-select queries it will return `the number of rows affected` which is `int`
+
+for example: `delete from movies where mno > 10` 3 rows deleted
+
+prototype: `public int executeUpdate(String sqlQuery) throws SQLException`.
+
+i.e. `int x = st.executeUpdate("delete from movies where msal > 10000");`
+`sout("the number of employee fired " + x);`
+
+## 3. execute()
+
+most commonly used method in real time. we can use `execute()` method for both `select` and `non-select` operations if we don't know the type of operation at the begining. for example if we are required to enter the query at runtime. which can be either `select` or `non-select` query.
+
+`executeQuery() --> return type is ResultSet`
+`executeUpdate() --> return type is int`
+`execute() --> return type boolean` at runtime it may return true or may return false.
+
+if it is true than it is always `select query` and if false than it is always `non select query`.
+
+### signature of execute()
+
+`public boolean execute(String sqlQuery) throws SQLException`.
+
+in program it will be something like this
+
+```
+  boolean b = st.execute("dynamically at runtime");
+  if (b==true)//select query
+  {
+    ResultSet rs = st.getResultSet();
+    while(rs.next()){
+      System.out.println(rs.getInt(1) + "\1" + rs.getString(2) + "\1" + rs.getInt() ...)
+    }
+  }
+  else // non-select query
+  {
+    int rowCount = st.getUpdateCount();
+    System.out.println("The number of records effected is " + rowCount)
+  }
+}
+```
+
+### Note
+
+on `Statement` object we can call `st.executeQuery()`, `st.executeUpdate()`, and `st.execute()` if we get true from `st.execute()` we can call `st.getResultSet()` if we get false from `st.execute()` we can call `st.getUpdateCount()`. all these methods we are calling on statement object only.
+
+## Execute method loop holes
+
+### case 1 executeQuery() on non-select query:
+
+usually we use `executeQuery()` on `select operations`. what happend when we use it on `non-select operations`. for example
+
+`Resultset rs = st.executeQuery("update employee set esal=7777 where ename='sachin");` so it depends on driver.
+
+`if Type-1 of oracle: SQLException`
+`if Type-4 of oracle: Empty Result set`. then if we try to access it it will give `SQLException`.
+
+### case 2 executeUpdate() on select query:
+
+by default we use `executeUpdate()` on `non-select operation`. what happend when we use it on `select operations`. for example
+
+`int x = st.executeUpdate("select * from employee");` so the result vary from driver to driver.
+
+`if Type-1 of oracle: SQLException`
+`if Type-4 of oracle: Number of rows selected (may be 4 depends how many employee)`.
+
+### case 3 executeUpdate() for DDL queries:
+
+if we use `create table` query in `executeUpdate()` method, so it is not a select query but also it will not affect the number of rows. so what will be the result. it depends on type of driver, the result vary. for example
+
+`int rowcount = st.executeUpdate("create table emp(eno number)");`
+
+```
+if Type-1 driver of oracle: return -1;
+if type-4 driver of oracle: return 0;
+```
+
+## step 5: process Result from ResultSet
+
+1. load and Register Driver: `Class.forName("sun.jdbc.odbc.JdbcOdbcDriver");`
+2. Establish connection between Java Application and Database: `Connection con = DriverManager.getConnection("jdbc:odbc:demodsn","scott","tiger");`
+3. Create Statement Object: `Statement st = con.createStatement();` used for to send sql query and bring back results
+4. Prepare, send and execute sql query: `ResultSet rs = st.executeQuery("select * from movies");`
+5. Process result from ResutlSet. we will discuss now.
+
+ResultSet is a cursor. by using that we can get the data row by row. so for a table we have `BFR(Before First Record)` than we have rows then in the end we have `ALR(After Last Record)`.
+when we get `ALR` we can stop.
+
+### how to read the rows
+
+to read rows `ResultSet` provides a method `next()` so
+
+```
+ResultSet rs = st.executeQuery("select * from movies");
+while (rs.next()){
+  "read data from that record"
+}
+```
+
+then to read the data from each cell we have methods like
+
+```
+rs.getXxx() --> rs.getInt(), rs.getString(), rs.getDouble()
+```
+
+and what we can provide inside `getXxx()`. we can either provide `ColumnName` or `ColumnIndex`.
+
+```
+rs.getInt(mno), rs.getString(mname), rs.getInt(1)
+```
+
+The `ColumnIndex` in jdbc always starts from `1`.
+
+### which is recommended
+
+- for readability `ColumnName` is preferred
+- for performance `ColumnIndex` is preferred
+
+### how to find ColumnIndex
+
+we use this ` int index = rs.findColumn(String ColumnName);`
+
+### Conclusions on ResultSet
+
+1. ResultSet follows Iterator Design Pattern
+2. ResultSet Object is always associated with Statement Object.
+3. Per Statement only one ResultSet is possible at a time. if we are trying to open another ResultSet then automatically first ResultSet will be close.
+
+for example:
+
+```
+ResultSet rs1 = st.executeQuery("select * from employee");
+ResultSet rs2 = st.executeQuery("select * from movies"); // rs1 will get closed
+
+// if we try
+while(rs1.next()) //SQLException
+{
+
+}
+```
+
+## step 6: close the connection
+
+1. `Class.forName("sun.jdbc.odbc.JdbcOdbcDriver");`
+2. `Connection con = DriverManager.getConnection("jdbc:odbc:demodsn","scott","tiger");`
+3. `Statement st = con.createStatement();`
+4. `ResultSet rs = st.excuteQuery("select * from movies");`
+5.
+
+```
+while (rs.next())
+{
+  sout(rs.getInt(1) + rs.getString(2) + rs.getString(3) + rs.getString(4))
+}
+```
+
+6. we opened `connection` then `Statement` and then `ResultSet`. so we have to close first `ResultSet` then `Statement` and atlast `connection`. so `rs.close()`, `st.close()` and last `con.close()`. so we have to close all the resources.
+
+### Important Conclusions
+
+- `ResultSet` is associated with `statement Object`.
+- Per `Statement` only one `ResultSet` is possible.
+- `Statement` is associated with `connection`.
+- Per `connection` multiple `statement objects` are possible.
+
+so if we close only the connection i.e. `con.close()` all the resources related to statement object and ResultSet will get closed. so it is enough.
+
+### con.close() in finally block
+
+```
+try{
+  open database connection
+  perform operations
+}
+catch(SQL Exception){
+  handling code
+
+}
+finally
+{
+  con.close();
+}
+```
+
+`finally` block will always execute so we have to close connection in that block till version `1.6v`. from version `1.7v` we have something `try with resources` which means the resources will close automatically when the try block reach to the end. so we don't need finally anymore.
+
+### try with resources
+
+```
+try(Connection con = DM.getConnection(jdbcurl, username, password))
+{
+  perform operation
+}
+catch(SQL Exception){
+  handling code
+
+}
+```
+
+## Working with Type-1 Driver:
+
+```
+java application --> Type-1 Driver --> ODBC Driver --> Database
+
+```
+
+Driver class Name: sun.jdbc.odbc.JdbcOdbcDriver
+jdbc url: jdbc:odbc:demodsn
+username: scott
+password: tiger
+Query: select \* from movies
+
+we are not going to write program for this because we cannot configure dsn in windows 10. only work with window XP
